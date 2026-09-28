@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#08100b">
+<title>Змейка 🐍</title>
+
+
+
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: none;
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(circle at 50% 0%, #16212e 0%, #05080a 65%);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #e6edf3;
+	 line-height: 1.5;
+  }
+
+  #app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: max(0.375rem, env(safe-area-inset-top))
+             max(0.375rem, env(safe-area-inset-right))
+             max(0.375rem, env(safe-area-inset-bottom))
+             max(0.375rem, env(safe-area-inset-left));
+    gap: 0.375rem;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-size: 2rem;
+    text-align: center; letter-spacing: .5px;
+    font-weight: 700; flex-shrink: 0;
+  }
+  h1 span { color: #7ddc6b; }
+
+  .hud {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 1rem;
+    color: #93a4b5;
+    width: 100%; max-width: 31.25rem; padding: 0 0.25rem 0.5rem;
+    flex-shrink: 0; gap: 0.375rem;
+  }
+  .hud > div { white-space: nowrap; }
+  .hud b {
+    color: #8ee87a; font-variant-numeric: tabular-nums;
+    font-size: clamp(.8rem, 3.2vw, 1rem);
+  }
+  .hud #speed { color: #7bd3ff; transition: color .2s ease; }
+  .hud #speed.boost {
+    color: #ffd93d; text-shadow: 0 0 0.5rem rgba(255,217,61,.8);
+  }
+
+  .modebar {
+    display: flex; gap: 0.375rem;
+    width: 100%; max-width: 31.25rem;
+    justify-content: center; flex-shrink: 0;
+  }
+  .modebar button {
+    flex: 1;
+    font-size: clamp(.65rem, 2.5vw, .8rem);
+    padding: 0.4375rem 0.375rem; font-weight: 500;
+    background: rgba(255,255,255,.06); color: #b9c8d6;
+    box-shadow: none; border: 0.0625rem solid rgba(255,255,255,.09);
+    border-radius: 0.625rem; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .modebar button:hover { background: rgba(255,255,255,.12); }
+  .modebar #btnMute, .modebar #btnBg, .modebar #btnHelp {
+    flex: 0 0 auto; min-width: 2.75rem;
+    font-size: 1rem; padding: 0.375rem 0.75rem;
+  }
+  .modebar #btnMute.muted { color: #ff8a8a; border-color: rgba(255,138,138,.35); }
+  .modebar #btnHelp { color: #7bd3ff; border-color: rgba(123,211,255,.32); font-weight: 800; }
+  .modebar #btnHelp:hover { background: rgba(123,211,255,.14); }
+
+  .speedpanel {
+    display: flex; flex-direction: column;
+    width: 100%; max-width: 31.25rem;
+    flex-shrink: 0;
+  }
+  .speedmodes {
+    display: flex; gap: 0.375rem;
+    justify-content: center;
+  }
+  .speedmodes button {
+    flex: 1;
+    font-size: clamp(.62rem, 2.4vw, .76rem);
+    padding: 0.4375rem 0.25rem; font-weight: 500;
+    background: rgba(255,255,255,.045);
+    color: #a8b8c8;
+    box-shadow: none; border: 0.0625rem solid rgba(255,255,255,.08);
+    border-radius: 0.625rem; cursor: pointer;
+    transition: all .15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .speedmodes button:hover { background: rgba(255,255,255,.08); }
+  .speedmodes button.active {
+    background: linear-gradient(180deg, #7bd3ff, #3d9dd6);
+    color: #041c2a; border-color: transparent; font-weight: 700;
+    box-shadow: 0 0.25rem 0.875rem -0.375rem rgba(123,211,255,.7);
+  }
+
+  .speedslider {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .28s ease, padding .28s ease, opacity .2s ease;
+    opacity: 0;
+    padding: 0 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .speedslider.open {
+    max-height: 3rem;
+    padding: 0.5rem 0.375rem 0.125rem;
+    opacity: 1;
+  }
+  .speedslider input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; height: 0.375rem; border-radius: 0.1875rem;
+    background: rgba(255,255,255,.10);
+    outline: none; cursor: pointer; min-width: 0;
+  }
+  .speedslider input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1.375rem; height: 1.375rem; border-radius: 50%;
+    background: linear-gradient(180deg, #6ee7a0, #34d17a);
+    box-shadow: 0 0.125rem 0.625rem rgba(74,222,128,.6);
+    cursor: pointer; border: 0.125rem solid #06210f;
+  }
+  .speedslider input[type=range]::-moz-range-thumb {
+    width: 1.375rem; height: 1.375rem; border-radius: 50%;
+    background: linear-gradient(180deg, #6ee7a0, #34d17a);
+    box-shadow: 0 0.125rem 0.625rem rgba(74,222,128,.6);
+    cursor: pointer; border: 0.125rem solid #06210f;
+  }
+  .speedslider .speedval {
+    flex: 0 0 auto;
+    font-size: clamp(.72rem, 2.8vw, .85rem);
+    color: #8ee87a;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700; min-width: 2.75rem; text-align: right;
+  }
+  .speedslider .speedval small {
+    color: #64798c; font-weight: 500; font-size: .85em;
+  }
+
+  .board {
+    position: relative; border-radius: 1.125rem; overflow: hidden;
+    box-shadow:
+      0 1.125rem 3.125rem rgba(0,0,0,.7),
+      0 0 0 0.0625rem rgba(120,220,120,.10),
+      0 0 4.375rem -1.375rem rgba(90,220,110,.45);
+    background: #08100b; flex-shrink: 0;
+    width: min(88vmin, 31.25rem, calc(100vh - 17.5rem));
+    height: min(88vmin, 31.25rem, calc(100vh - 17.5rem));
+    max-width: 100%; max-height: 100%;
+    transition: box-shadow .18s ease;
+  }
+  .board.boost {
+    box-shadow:
+      0 1.125rem 3.125rem rgba(0,0,0,.7),
+      0 0 0 0.125rem rgba(255,217,61,.55),
+      0 0 5.625rem -0.625rem rgba(255,217,61,.7);
+  }
+
+  canvas {
+    display: block; width: 100%; height: 100%;
+    touch-action: none; -webkit-touch-callout: none;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    text-align: center; padding: 1.25rem;
+    background: rgba(5,10,7,.82);
+    backdrop-filter: blur(0.375rem); -webkit-backdrop-filter: blur(0.375rem);
+    transition: opacity .18s ease; cursor: default;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .overlay h2 { margin: 0 0 0.5rem; font-size: clamp(1.1rem, 5vw, 1.5rem); }
+  .overlay p {
+    margin: 0 0 1rem; color: #9fb0c0;
+    font-size: clamp(.78rem, 3vw, .92rem); line-height: 1.45;
+  }
+
+  button {
+    font: inherit; font-weight: 600; color: #06210f;
+    background: linear-gradient(180deg, #8ef0a4, #3fd06e);
+    border: none; border-radius: 0.75rem; padding: 0.6875rem 1.375rem;
+    cursor: pointer;
+    transition: transform .08s ease, filter .15s ease;
+    box-shadow: 0 0.375rem 1.125rem -0.375rem rgba(90,222,128,.9);
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: scale(.96); }
+
+  /* ============ Controls ============ */
+  .controls {
+    display: flex; gap: 0.5rem;
+    width: 100%; max-width: 31.25rem; flex-shrink: 0;
+  }
+  .controls button {
+    flex: 1;
+    background: rgba(255,255,255,.07); color: #d7e3ee;
+    box-shadow: none; border: 0.0625rem solid rgba(255,255,255,.09);
+    font-weight: 500; padding: 0.625rem 0.375rem;
+    font-size: clamp(.72rem, 2.8vw, .88rem);
+    transition: all .15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3125rem;
+    min-width: 0;
+  }
+  .controls button .btn-icon {
+    font-size: 1.05em;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .controls button .btn-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .controls button:hover { background: rgba(255,255,255,.12); }
+  .controls #btnBoost {
+    color: #7bd3ff; border-color: rgba(123,211,255,.3);
+    background: rgba(123,211,255,.08);
+  }
+  .controls #btnBoost.ready {
+    color: #ffd93d; border-color: rgba(255,217,61,.55);
+    background: rgba(255,217,61,.14);
+    box-shadow: 0 0 1.125rem -0.25rem rgba(255,217,61,.7);
+    animation: boostPulse 1.4s ease-in-out infinite;
+  }
+  .controls #btnBoost.active {
+    color: #06210f;
+    background: linear-gradient(180deg, #ffe066, #ffc400);
+    border-color: transparent;
+  }
+  .controls #btnBoost.cooling {
+    opacity: .55; cursor: not-allowed; color: #7a8a99;
+    background: rgba(255,255,255,.03);
+    border-color: rgba(255,255,255,.08);
+  }
+
+  @keyframes boostPulse {
+    0%, 100% { box-shadow: 0 0 1.125rem -0.25rem rgba(255,217,61,.7); }
+    50%      { box-shadow: 0 0 1.625rem 0rem rgba(255,217,61,.95); }
+  }
+
+  .joystick { display: none; }
+
+  .hint {
+    text-align: center; color: #64798c;
+    font-size: clamp(.6rem, 2.2vw, .74rem);
+    margin: 0; line-height: 1.3;
+    min-height: 1.4em; flex-shrink: 0; max-width: 31.25rem;
+  }
+
+  @media (max-height: 43.75em) { h1 { display: none; } }
+  @media (max-height: 38.75em) {
+    .hint { display: none; }
+    #app { gap: 0.25rem; }
+  }
+
+  /* ============================================================
+     МОБИЛЬНАЯ ВЕРСИЯ
+     ============================================================ */
+  @media (hover: none) and (pointer: coarse) {
+    #app { padding: 0; gap: 0; display: block; }
+
+    h1, .hint { display: none; }
+
+    .board {
+      border-radius: 0;
+      box-shadow: none;
+      z-index: 1;
+      background: #08100b;
+      overflow: hidden;
+    }
+    .board.boost { box-shadow: inset 0 0 0 0.1875rem rgba(255,217,61,.55); }
+
+    /* ==== HUD ==== */
+    .hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      width: auto; max-width: none;
+      padding: max(0.375rem, env(safe-area-inset-top))
+               max(0.5rem, env(safe-area-inset-right))
+               0.25rem
+               max(0.5rem, env(safe-area-inset-left));
+      background: linear-gradient(180deg,
+        rgba(0,0,0,.72) 0%,
+        rgba(0,0,0,.34) 70%,
+        transparent 100%);
+      font-size: 1rem;
+      gap: 0.1875rem;
+      pointer-events: none;
+    }
+    .hud b { font-size: 1rem; }
+    .hud > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ==== Speed modes ==== */
+    .speedpanel {
+      position: fixed;
+      top: calc(max(0.5rem, env(safe-area-inset-top)) + 1.875rem);
+      left: max(0.5rem, env(safe-area-inset-left));
+      right: auto;
+      z-index: 21;
+      width: auto;
+      max-width: calc(100vw - 8.125rem);
+      flex-direction: column;
+      gap: 0.1875rem;
+    }
+    .speedmodes {
+      gap: 0.1875rem;
+      width: auto;
+      justify-content: flex-start;
+    }
+    .speedmodes button {
+      flex: 0 0 auto;
+      padding: 0.25rem 0.5rem;
+      font-size: .6rem;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(0.625rem);
+      -webkit-backdrop-filter: blur(0.625rem);
+      border: 0.0625rem solid rgba(255,255,255,.12);
+      border-radius: 0.5rem;
+      color: #b9c8d6;
+    }
+    .speedmodes button.active {
+      background: linear-gradient(180deg, #7bd3ff, #3d9dd6);
+      color: #041c2a;
+      border-color: transparent;
+      font-weight: 700;
+    }
+    .speedslider.open {
+      max-height: 2.125rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(0.625rem);
+      -webkit-backdrop-filter: blur(0.625rem);
+      border-radius: 0.5625rem;
+      border: 0.0625rem solid rgba(255,255,255,.10);
+      width: 11.875rem;
+      max-width: calc(100vw - 1.5rem);
+      margin-top: 0.125rem;
+    }
+    .speedslider .speedval { min-width: 2.125rem; font-size: .64rem; }
+    .speedslider input[type=range] { height: 0.25rem; }
+    .speedslider input[type=range]::-webkit-slider-thumb {
+      width: 1rem; height: 1rem;
+    }
+
+    /* ==== Modebar ==== */
+    .modebar {
+      position: fixed;
+      top: calc(max(0.5rem, env(safe-area-inset-top)) + 1.875rem);
+      right: max(0.5rem, env(safe-area-inset-right));
+      left: auto;
+      z-index: 22;
+      width: auto; max-width: none;
+      gap: 0.1875rem;
+      justify-content: flex-end;
+    }
+    .modebar button {
+      flex: 0 0 auto;
+      min-width: 2rem;
+      width: 2rem;
+      height: 1.75rem;
+      padding: 0;
+      font-size: .82rem;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(0.625rem);
+      -webkit-backdrop-filter: blur(0.625rem);
+      border: 0.0625rem solid rgba(255,255,255,.14);
+      border-radius: 0.5rem;
+      display: grid; place-items: center;align-content: center;
+      color: #d7e3ee;
+      font-weight: 700;
+    }
+    .modebar button:active { transform: scale(.94); }
+    .modebar #btnHelp { color: #7bd3ff; }
+
+    /* ==== Controls — 36×36 → 2.25rem ==== */
+    .controls {
+      position: fixed;
+      bottom: max(0.875rem, env(safe-area-inset-bottom));
+      left: max(0.75rem, env(safe-area-inset-left));
+      right: auto;
+      z-index: 20;
+      width: auto; max-width: none;
+      flex-direction: column;
+      gap: 0.375rem;
+      align-items: stretch;
+      flex: 0 0 auto;
+    }
+    .controls button {
+      width: 2.25rem;
+      height: 2.25rem;
+      min-width: 0;
+      padding: 0;
+      font-size: 1rem;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(0.625rem);
+      -webkit-backdrop-filter: blur(0.625rem);
+      border: 0.0625rem solid rgba(255,255,255,.16);
+      border-radius: 0.625rem;
+      font-weight: 600;
+      color: #d7e3ee;
+      box-shadow: none;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+		align-content: center;
+    }
+    .controls button:active {
+      background: rgba(255,255,255,.14);
+      transform: scale(.92);
+    }
+    .controls button .btn-label { display: none; }
+    .controls button .btn-icon { font-size: 1.05rem; line-height: 1.5; }
+
+    .controls #btnBoost {
+      color: #7bd3ff;
+      border-color: rgba(123,211,255,.3);
+      background: rgba(15,30,42,.6);
+    }
+    .controls #btnBoost.ready {
+      color: #ffd93d;
+      border-color: rgba(255,217,61,.6);
+      background: rgba(45,35,10,.75);
+      animation: boostPulse 1.4s ease-in-out infinite;
+    }
+    .controls #btnBoost.active {
+      color: #06210f;
+      background: linear-gradient(180deg, #ffe066, #ffc400);
+      border-color: transparent;
+      animation: none;
+      box-shadow: 0 0 1.375rem rgba(255,217,61,.8);
+    }
+    .controls #btnBoost.cooling {
+      opacity: .6;
+      color: #9ab0c0;
+      background: rgba(0,0,0,.4);
+      border-color: rgba(255,255,255,.08);
+      animation: none;
+    }
+
+    /* ==== Круглый джойстик ==== */
+    .joystick {
+      display: block;
+      position: fixed;
+      bottom: max(0.875rem, env(safe-area-inset-bottom));
+      right: max(0.75rem, env(safe-area-inset-right));
+      width: 7.375rem;
+      height: 7.375rem;
+      z-index: 20;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .joystick-base {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%,
+          rgba(255,255,255,.06) 0%,
+          rgba(255,255,255,.015) 55%,
+          rgba(255,255,255,.045) 100%);
+      border: 0.09375rem solid rgba(255,255,255,.14);
+      box-shadow:
+        inset 0 0 1.375rem rgba(0,0,0,.25),
+        inset 0 0 0.125rem rgba(255,255,255,.08);
+      backdrop-filter: blur(0.375rem);
+      -webkit-backdrop-filter: blur(0.375rem);
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .joystick-base::after {
+      content: '';
+      position: absolute;
+      inset: 30%;
+      border-radius: 50%;
+      border: 0.0625rem dashed rgba(255,255,255,.09);
+      pointer-events: none;
+    }
+
+    .joystick-knob {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 3.125rem; height: 3.125rem;
+      margin: -1.5625rem 0 0 -1.5625rem;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%,
+          rgba(210,255,220,.78) 0%,
+          rgba(142,232,122,.68) 35%,
+          rgba(70,170,85,.55) 70%,
+          rgba(40,120,55,.75) 100%);
+      border: 0.09375rem solid rgba(255,255,255,.28);
+      box-shadow:
+        0 0.1875rem 0.75rem rgba(0,0,0,.42),
+        inset 0 0.0625rem 0.125rem rgba(255,255,255,.30),
+        inset 0 -0.1875rem 0.5rem rgba(0,0,0,.22);
+      transition: transform .14s cubic-bezier(.2,.8,.3,1),
+                  background .15s ease,
+                  box-shadow .15s ease;
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    .joystick.active .joystick-knob {
+      transition: transform 0s, background .12s ease, box-shadow .12s ease;
+      background:
+        radial-gradient(circle at 35% 30%,
+          rgba(255,255,220,.92) 0%,
+          rgba(255,220,120,.82) 40%,
+          rgba(240,180,60,.72) 70%,
+          rgba(200,140,40,.85) 100%);
+      box-shadow:
+        0 0.1875rem 0.875rem rgba(0,0,0,.48),
+        0 0 1.5rem rgba(255,220,120,.65),
+        inset 0 0.0625rem 0.125rem rgba(255,255,255,.42),
+        inset 0 -0.1875rem 0.5rem rgba(0,0,0,.22);
+    }
+
+    .joystick.active .joystick-base {
+      border-color: rgba(255,217,61,.55);
+      background:
+        radial-gradient(circle at 50% 50%,
+          rgba(255,217,61,.09) 0%,
+          rgba(255,217,61,.02) 55%,
+          rgba(255,217,61,.06) 100%);
+      box-shadow:
+        inset 0 0 1.625rem rgba(255,217,61,.15),
+        inset 0 0 0.125rem rgba(255,255,255,.14);
+    }
+
+    .overlay { padding: 1.25rem; }
+  }
+
+  /* ============================================================
+     ЛАНДШАФТ
+     ============================================================ */
+  @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+    .hud {
+      padding-right: max(0.5rem, env(safe-area-inset-right));
+      font-size: .58rem;
+    }
+    .hud b { font-size: .66rem; }
+
+    .speedpanel {
+      top: calc(max(0.1875rem, env(safe-area-inset-top)) + 1.625rem);
+      left: max(0.5rem, env(safe-area-inset-left));
+      max-width: calc(100vw - 15rem);
+    }
+    .speedmodes button {
+      padding: 0.1875rem 0.375rem;
+      font-size: .54rem;
+    }
+    .speedslider.open {
+      max-height: 1.75rem;
+      padding: 0.1875rem 0.375rem;
+      width: 10rem;
+    }
+    .speedslider .speedval { font-size: .58rem; min-width: 1.875rem; }
+    .speedslider input[type=range]::-webkit-slider-thumb {
+      width: 0.875rem; height: 0.875rem;
+    }
+
+    .modebar {
+      top: calc(max(0.1875rem, env(safe-area-inset-top)) + 1.625rem);
+      right: max(0.5rem, env(safe-area-inset-right));
+    }
+    .modebar button {
+      min-width: 1.75rem;
+      width: 1.75rem;
+      height: 1.5rem;
+      font-size: .72rem;
+    }
+
+    .controls {
+      bottom: auto;
+      top: 50%;
+      left: max(0.5rem, env(safe-area-inset-left));
+      transform: translateY(-50%);
+      gap: 0.375rem;
+    }
+    .controls button {
+      width: 2.125rem;
+      height: 2.125rem;
+      border-radius: 0.5625rem;
+      font-size: .95rem;
+    }
+    .controls button .btn-icon { font-size: 1rem; }
+
+    .joystick {
+      bottom: -2.5rem;
+      
+      right: max(0.625rem, env(safe-area-inset-right));
+      transform: translateY(-50%);
+      width: 6.75rem;
+      height: 6.75rem;
+    }
+    .joystick-knob {
+      width: 2.875rem; height: 2.875rem;
+      margin: -1.4375rem 0 0 -1.4375rem;
+    }
+
+    .overlay { padding: 2rem; }
+    .overlay h2 { font-size: 1.1rem; }
+    .overlay p { font-size: .76rem; margin-bottom: 0.75rem; }
+    .overlay button { padding: 0.5625rem 1.125rem; font-size: .8rem; }
+  }
+
+  /* ============================================================
+     МОДАЛЬНЫЕ ОКНА
+     ============================================================ */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(0.375rem); -webkit-backdrop-filter: blur(0.375rem);
+    display: grid; place-items: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+    padding: 1rem;
+  }
+  .modal.open { opacity: 1; pointer-events: auto; }
+
+  .modal-panel {
+    background: linear-gradient(180deg, #131c18, #0a120e);
+    border: 0.0625rem solid rgba(120,220,120,.16);
+    border-radius: 1.125rem;
+    padding: 0.875rem;
+    width: 100%; max-width: 27.5rem;
+    max-height: 84vh;
+    min-height: 0;
+    display: flex; flex-direction: column;
+    box-shadow: 0 1.5rem 3.75rem rgba(0,0,0,.75);
+    overflow: hidden;
+  }
+  .modal-panel.help { border-color: rgba(123,211,255,.22); }
+
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.625rem; flex-shrink: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 0.0625rem solid rgba(255,255,255,.06);
+  }
+  .modal-header h3 {
+    margin: 0; font-size: 1.05rem; font-weight: 700;
+    color: #d7e3ee; letter-spacing: .3px;
+  }
+  .modal-close {
+    background: rgba(255,255,255,.06);
+    color: #b9c8d6;
+    box-shadow: none;
+    border: 0.0625rem solid rgba(255,255,255,.09);
+    padding: 0.375rem 0.6875rem;
+    font-size: .9rem;
+    border-radius: 0.5625rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .modal-close:hover { background: rgba(255,255,255,.12); }
+
+  /* Скролл в справке */
+  .help-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    color: #c7d3de;
+    font-size: .84rem;
+    line-height: 1.5;
+    padding: 0.125rem 0.625rem 0.125rem 0.125rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(142,232,122,.55) rgba(255,255,255,.04);
+  }
+  .help-body::-webkit-scrollbar { width: 0.5rem; }
+  .help-body::-webkit-scrollbar-track {
+    background: rgba(255,255,255,.04);
+    border-radius: 0.25rem;
+    margin: 0.125rem 0;
+  }
+  .help-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg,
+      rgba(142,232,122,.65) 0%,
+      rgba(80,180,100,.55) 100%);
+    border-radius: 0.25rem;
+    border: 0.0625rem solid rgba(255,255,255,.08);
+    box-shadow: inset 0 0 0.25rem rgba(142,232,122,.4);
+  }
+  .help-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg,
+      rgba(142,232,122,.85) 0%,
+      rgba(100,200,120,.75) 100%);
+  }
+  .help-body::-webkit-scrollbar-corner { background: transparent; }
+
+  .help-body h4 {
+    margin: 0.875rem 0 0.375rem;
+    font-size: .82rem;
+    color: #8ee87a;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 700;
+  }
+  .help-body h4:first-child { margin-top: 0; }
+  .help-body h4.blue { color: #7bd3ff; }
+
+  .help-row {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0.3125rem 0;
+    border-bottom: 0.0625rem dashed rgba(255,255,255,.06);
+  }
+  .help-row:last-child { border-bottom: none; }
+
+  .help-key {
+    flex: 0 0 auto;
+    background: rgba(255,255,255,.08);
+    border: 0.0625rem solid rgba(255,255,255,.14);
+    border-radius: 0.4375rem;
+    padding: 0.125rem 0.5rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .78rem;
+    font-weight: 700;
+    color: #e6edf3;
+    box-shadow: 0 0.0625rem 0 rgba(0,0,0,.4);
+    min-width: 2.625rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .help-key.wide { min-width: 4.375rem; }
+  .help-key.emoji { font-family: inherit; font-size: 1.05rem; padding: 0.0625rem 0.5rem; }
+
+  .help-text { flex: 1; color: #b3c2d0; }
+  .help-text b { color: #d7e3ee; }
+
+  .help-note {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.625rem;
+    background: rgba(123,211,255,.06);
+    border-left: 0.1875rem solid rgba(123,211,255,.5);
+    border-radius: 0.375rem;
+    font-size: .78rem;
+    color: #a6c4dd;
+    line-height: 1.4;
+  }
+
+  /* PICKER */
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    overflow-y: auto;
+    padding: 0.125rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(142,232,122,.55) rgba(255,255,255,.04);
+  }
+  .picker-grid::-webkit-scrollbar { width: 0.5rem; }
+  .picker-grid::-webkit-scrollbar-track {
+    background: rgba(255,255,255,.04);
+    border-radius: 0.25rem;
+  }
+  .picker-grid::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg,
+      rgba(142,232,122,.65), rgba(80,180,100,.55));
+    border-radius: 0.25rem;
+  }
+  @media (min-width: 30em) {
+    .picker-grid { grid-template-columns: repeat(5, 1fr); }
+  }
+  .pick-cell {
+    background: rgba(255,255,255,.04);
+    border: 0.125rem solid rgba(255,255,255,.08);
+    border-radius: 0.75rem;
+    padding: 0.3125rem;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0.25rem;
+    cursor: pointer;
+    transition: border-color .12s ease, transform .08s ease, background .12s ease;
+    font: inherit;
+    color: #b9c8d6;
+    box-shadow: none;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .pick-cell:hover {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.18);
+  }
+  .pick-cell:active { transform: scale(.96); }
+  .pick-cell.active {
+    border-color: #8ee87a;
+    box-shadow: 0 0 0 0.0625rem #8ee87a, 0 0 0.875rem -0.125rem rgba(142,232,122,.6);
+    background: rgba(142,232,122,.08);
+  }
+  .pick-cell.active .pick-name { color: #8ee87a; font-weight: 700; }
+  .pick-preview {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 0.5rem;
+    display: block;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 0.0625rem rgba(255,255,255,.06);
+  }
+  .pick-preview canvas {
+    width: 100%; height: 100%; display: block;
+    border-radius: 0.5rem;
+  }
+  .pick-dice {
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #1c2a20, #0e1812);
+    font-size: 1.6rem;
+    aspect-ratio: 1 / 1;
+    border-radius: 0.5rem;
+    box-shadow: inset 0 0 0 0.0625rem rgba(255,255,255,.06);
+  }
+  .pick-name {
+    font-size: .66rem;
+    color: #93a4b5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.1;
+    padding-bottom: 0.0625rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <h1>🐍 Зм<span>ейка</span></h1>
+
+  <div class="hud">
+    <div>Очки: <b id="score">0</b></div>
+    <div>Скорость: <b id="speed">1</b></div>
+    <div>Рекорд: <b id="best">0</b></div>
+  </div>
+
+  <div class="modebar">
+    <button id="btnHelp" title="Справка">?</button>
+    <button id="btnBg" title="Фон">🎨</button>
+    <button id="btnMute" title="Звук">🔊</button>
+  </div>
+
+  <div class="speedpanel">
+    <div class="speedmodes">
+      <button id="spdEach" class="active" title="Скорость +1 за каждую мышь">🐭 Каждая</button>
+      <button id="spdEvery10" title="Скорость +1 за каждые 10 мышей">🐭 ×10</button>
+      <button id="spdManual" title="Скорость вручную">⚙ Ручная</button>
+    </div>
+    <div class="speedslider" id="speedSliderWrap">
+      <input type="range" id="speedRange" min="1" max="20" value="5" step="1">
+      <span class="speedval"><b id="speedVal">5</b><small> / 20</small></span>
+    </div>
+  </div>
+
+  <div class="board" id="board">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="overlay">
+      <div>
+        <h2 id="ovTitle">Готов?</h2>
+        <p id="ovText">Стрелки или WASD — движение.<br>Пробел — пауза.</p>
+        <button id="ovBtn">Играть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="joystick" id="joystick">
+    <div class="joystick-base"></div>
+    <div class="joystick-knob" id="joystickKnob"></div>
+  </div>
+
+  <div class="controls">
+    <button id="btnPause" title="Пауза">
+      <span class="btn-icon">⏸</span>
+      <span class="btn-label">Пауза</span>
+    </button>
+    <button id="btnBoost" title="Рывок">
+      <span class="btn-icon">⚡</span>
+      <span class="btn-label">Рывок</span>
+    </button>
+    <button id="btnRestart" title="Заново">
+      <span class="btn-icon">↻</span>
+      <span class="btn-label">Заново</span>
+    </button>
+  </div>
+
+  <p class="hint" id="hint">Стрелки/WASD · Shift — рывок · Пробел — пауза · ? — справка</p>
+</div>
+
+<!-- ========== PICKER ФОНОВ ========== -->
+<div class="modal" id="picker">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h3>🎨 Фон</h3>
+      <button id="pickerClose" class="modal-close">✕</button>
+    </div>
+    <div class="picker-grid" id="pickerGrid"></div>
+  </div>
+</div>
+
+<!-- ========== HELP ========== -->
+<div class="modal" id="help">
+  <div class="modal-panel help">
+    <div class="modal-header">
+      <h3>❓ Справка</h3>
+      <button id="helpClose" class="modal-close">✕</button>
+    </div>
+    <div class="help-body">
+
+      <h4>Управление на компьютере</h4>
+      <div class="help-row">
+        <span class="help-key wide">← ↑ → ↓</span>
+        <span class="help-text">движение змейки</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key wide">W A S D</span>
+        <span class="help-text">альтернативное движение</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key">Shift</span>
+        <span class="help-text">рывок (ускорение на 2 секунды)</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key wide">Пробел</span>
+        <span class="help-text">пауза / продолжить</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key">Enter</span>
+        <span class="help-text">начать игру / заново</span>
+      </div>
+
+      <h4>Управление на телефоне</h4>
+      <div class="help-row">
+        <span class="help-key emoji">🕹</span>
+        <span class="help-text">виртуальный джойстик в правом нижнем углу</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key">Свайп</span>
+        <span class="help-text">проведите пальцем по полю</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">⚡</span>
+        <span class="help-text">кнопка рывка в левом нижнем углу</span>
+      </div>
+
+      <h4 class="blue">Кнопки интерфейса</h4>
+      <div class="help-row">
+        <span class="help-key emoji">⏸</span>
+        <span class="help-text"><b>Пауза</b> — остановить / продолжить игру</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">⚡</span>
+        <span class="help-text"><b>Рывок</b> — временное ускорение (кулдаун 7 секунд). Готовность подсвечивается золотым</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">↻</span>
+        <span class="help-text"><b>Заново</b> — начать новую игру</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">🎨</span>
+        <span class="help-text"><b>Фон</b> — выбор из 20 фонов или «Случайно»</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">🔊</span>
+        <span class="help-text"><b>Звук</b> — включить / выключить</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">?</span>
+        <span class="help-text">эта справка</span>
+      </div>
+
+      <h4 class="blue">Режимы скорости</h4>
+      <div class="help-row">
+        <span class="help-key emoji">🐭</span>
+        <span class="help-text"><b>Каждая</b> — скорость +1 за каждую съеденную мышь</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">×10</span>
+        <span class="help-text"><b>×10</b> — скорость +1 за каждые 10 мышей</span>
+      </div>
+      <div class="help-row">
+        <span class="help-key emoji">⚙</span>
+        <span class="help-text"><b>Ручная</b> — скорость задаётся ползунком, не меняется от еды</span>
+      </div>
+
+      <h4 class="blue">Как играть</h4>
+      <div class="help-row">
+        <span class="help-text" style="flex:1">
+          Управляйте змейкой, ешьте мышей и не врезайтесь в стены и собственное тело.
+          Каждая мышь даёт <b>10 очков</b>. Рекорд сохраняется автоматически.
+        </span>
+      </div>
+      <div class="help-row">
+        <span class="help-text" style="flex:1">
+          На каждом фоне змейка остаётся зелёной, а еда — мышью. Иконки и элементы интерфейса
+          адаптируются под размер экрана.
+        </span>
+      </div>
+      <div class="help-row">
+        <span class="help-text" style="flex:1">
+          Режим скорости можно менять в любой момент — он применится к следующей съеденной мыши.
+        </span>
+      </div>
+
+      <div class="help-note">
+        💡 Совет: активный рывок ⚡ светит тело змейки голубым.
+        Используйте его, когда нужно быстро добраться до мыши в дальнем углу.
+      </div>
+
+      <div class="help-note" style="background: rgba(142,232,122,.06); border-left-color: rgba(142,232,122,.5); color: #b8d4a0;">
+        🎮 Прогресс сохраняется в этом браузере. Рекорд обновляется автоматически.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     YANDEX GAMES SDK
+     ============================================================ */
+  var ysdk = null, sdkReady = false;
+
+  function initSDK() {
+    if (typeof YaGames === 'undefined') {
+      console.warn('Yandex Games SDK не загружен.');
+      return;
+    }
+    YaGames.init().then(function (sdk) {
+      ysdk = sdk; sdkReady = true;
+      console.log('Yandex Games SDK инициализирован');
+      try {
+        if (ysdk.features && ysdk.features.LoadingAPI) {
+          ysdk.features.LoadingAPI.ready();
+        }
+      } catch (e) { console.warn('LoadingAPI error:', e); }
+    }).catch(function (err) {
+      console.error('Ошибка инициализации SDK:', err);
+    });
+  }
+  window.addEventListener('load', initSDK);
+
+  /* ============================================================
+     Хранилище
+     ============================================================ */
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  /* ============================================================
+     ЗВУК
+     ============================================================ */
+  var audioCtx = null;
+  var muted = store.get('snake_muted') === '1';
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      } catch (e) { console.warn('Web Audio недоступен:', e); }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function () {});
+    }
+  }
+
+  function playEatSound() {
+    if (muted) return;
+    ensureAudio(); if (!audioCtx) return;
+    var t = audioCtx.currentTime;
+    var master = audioCtx.createGain();
+    master.gain.value = 0.85;
+    master.connect(audioCtx.destination);
+
+    var dur = 0.16;
+    var bufSize = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+    var buffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) {
+      var env = Math.pow(1 - i / bufSize, 1.8);
+      data[i] = (Math.random() * 2 - 1) * env;
+    }
+    var noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    var bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1600; bp.Q.value = 1.6;
+    var nGain = audioCtx.createGain();
+    nGain.gain.setValueAtTime(0.20, t);
+    nGain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    noise.connect(bp); bp.connect(nGain); nGain.connect(master);
+    noise.start(t); noise.stop(t + dur + 0.02);
+
+    var osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(900, t);
+    osc1.frequency.exponentialRampToValueAtTime(180, t + 0.14);
+    var g1 = audioCtx.createGain();
+    g1.gain.setValueAtTime(0.28, t);
+    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    osc1.connect(g1); g1.connect(master);
+    osc1.start(t); osc1.stop(t + 0.17);
+
+    var osc2 = audioCtx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1760, t + 0.01);
+    osc2.frequency.exponentialRampToValueAtTime(440, t + 0.11);
+    var g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0.11, t + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    osc2.connect(g2); g2.connect(master);
+    osc2.start(t + 0.01); osc2.stop(t + 0.14);
+  }
+
+  function playSpeedUpSound() {
+    if (muted) return;
+    ensureAudio(); if (!audioCtx) return;
+    var t = audioCtx.currentTime;
+    var master = audioCtx.createGain();
+    master.gain.value = 0.45; master.connect(audioCtx.destination);
+    var osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(1320, t + 0.22);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0, t);
+    g.gain.linearRampToValueAtTime(0.14, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+    osc.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + 0.28);
+  }
+
+  function playBoostSound() {
+    if (muted) return;
+    ensureAudio(); if (!audioCtx) return;
+    var t = audioCtx.currentTime;
+    var master = audioCtx.createGain();
+    master.gain.value = 0.6; master.connect(audioCtx.destination);
+    var osc = audioCtx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(1100, t + 0.28);
+    var filt = audioCtx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.setValueAtTime(600, t);
+    filt.frequency.exponentialRampToValueAtTime(4000, t + 0.28);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    osc.connect(filt); filt.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + 0.34);
+  }
+
+  function playDeathSound() {
+    if (muted) return;
+    ensureAudio(); if (!audioCtx) return;
+    var t = audioCtx.currentTime;
+    var master = audioCtx.createGain();
+    master.gain.value = 0.7; master.connect(audioCtx.destination);
+    var osc = audioCtx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(420, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.55);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + 0.62);
+  }
+
+  /* ============================================================
+     Canvas / DPR
+     ============================================================ */
+  var canvas = document.getElementById('game');
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext('2d');
+
+  var SIZE = 400;
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = SIZE * DPR;
+  canvas.height = SIZE * DPR;
+
+  var CELL = 20;
+  var COLS = SIZE / CELL;
+  var ROWS = SIZE / CELL;
+
+  /* ============================================================
+     СКОРОСТЬ
+     ============================================================ */
+  var SPEED_LEVEL_MIN = 1;
+  var SPEED_LEVEL_MAX = 20;
+  var SPEED_LEVEL_START = 1;
+  var BASE_SPEED = 150;
+  var MIN_SPEED = 55;
+  var SPEED_STEP = (BASE_SPEED - MIN_SPEED) / (SPEED_LEVEL_MAX - 1);
+
+  function stepMsFromLevel(lvl) {
+    lvl = Math.max(SPEED_LEVEL_MIN, Math.min(SPEED_LEVEL_MAX, lvl));
+    return BASE_SPEED - (lvl - 1) * SPEED_STEP;
+  }
+
+  var BOOST_DURATION = 2200;
+  var BOOST_COOLDOWN = 7000;
+  var BOOST_MULT = 0.55;
+
+  var speedMode = store.get('snake_speedmode') || 'each';
+  var manualLevel = parseInt(store.get('snake_manuallevel'), 10);
+  if (!isFinite(manualLevel) || manualLevel < SPEED_LEVEL_MIN || manualLevel > SPEED_LEVEL_MAX) {
+    manualLevel = 5;
+  }
+
+  var speedLevel = SPEED_LEVEL_START;
+  var eatenCount = 0;
+
+  /* ============================================================
+     20 ФОНОВ
+     ============================================================ */
+  var BACKGROUNDS = [
+    { name:'Лес',       bg:['#101a12','#0a130d','#060c08'], spA:'130,180,120', spB:'0,0,0',      gr:'140,210,140', br:'150,225,150', star:false },
+    { name:'Пустыня',   bg:['#3a2a18','#241809','#140d04'], spA:'220,180,120', spB:'20,10,0',     gr:'210,170,110', br:'230,190,130', star:false },
+    { name:'Океан',     bg:['#0a1a2a','#061020','#030812'], spA:'100,180,220', spB:'0,10,20',     gr:'90,170,210',  br:'110,190,230', star:false },
+    { name:'Ночь',      bg:['#0a0a20','#05051a','#020210'], spA:'180,180,220', spB:'0,0,10',      gr:'140,140,200', br:'160,160,220', star:true  },
+    { name:'Лава',      bg:['#2a0a08','#1a0604','#0d0302'], spA:'240,120,60',  spB:'20,0,0',      gr:'200,80,40',   br:'240,110,60',  star:false },
+    { name:'Лёд',       bg:['#1a2a35','#0e1a22','#060e14'], spA:'180,220,240', spB:'0,20,30',     gr:'160,210,235', br:'190,230,250', star:false },
+    { name:'Небула',    bg:['#2a0a30','#180520','#0a0210'], spA:'220,140,240', spB:'20,0,30',     gr:'200,130,230', br:'230,150,250', star:true  },
+    { name:'Осень',     bg:['#2a1808','#1a0e04','#0d0602'], spA:'220,150,60',  spB:'20,10,0',     gr:'210,140,70',  br:'230,160,80',  star:false },
+    { name:'Болото',    bg:['#152018','#0c140e','#060a06'], spA:'120,150,90',  spB:'0,10,0',      gr:'130,160,100', br:'150,180,110', star:false },
+    { name:'Сакура',    bg:['#2a1520','#1a0e14','#0d0608'], spA:'250,180,200', spB:'30,0,10',     gr:'240,170,195', br:'255,190,210', star:false },
+    { name:'Киберпанк', bg:['#100820','#0a0518','#050208'], spA:'120,60,220',  spB:'0,0,20',      gr:'180,80,255',  br:'100,240,255', star:false },
+    { name:'Космос',    bg:['#050510','#030308','#010104'], spA:'200,200,255', spB:'0,0,0',       gr:'120,120,200', br:'160,160,240', star:true  },
+    { name:'Мята',      bg:['#0e2018','#081410','#040a08'], spA:'140,230,190', spB:'0,20,10',     gr:'130,220,180', br:'150,240,200', star:false },
+    { name:'Медь',      bg:['#2a1810','#1a0e08','#0d0604'], spA:'210,140,90',  spB:'20,5,0',      gr:'200,130,80',  br:'230,150,100', star:false },
+    { name:'Моно',      bg:['#1a1a1a','#101010','#080808'], spA:'180,180,180', spB:'0,0,0',       gr:'160,160,160', br:'190,190,190', star:false },
+    { name:'Закат',     bg:['#2a1030','#200815','#0d0408'], spA:'240,140,120', spB:'30,0,20',     gr:'230,130,110', br:'250,150,130', star:false },
+    { name:'Аврора',    bg:['#081828','#061018','#030810'], spA:'120,240,200', spB:'0,10,20',     gr:'110,230,190', br:'130,250,210', star:true  },
+    { name:'Вулкан',    bg:['#180808','#100404','#080202'], spA:'240,90,40',   spB:'20,0,0',      gr:'200,70,30',   br:'240,100,50',  star:false },
+    { name:'Золото',    bg:['#28200a','#1a1406','#0d0a03'], spA:'240,200,80',  spB:'20,15,0',     gr:'230,190,70',  br:'250,210,90',  star:false },
+    { name:'Роза',      bg:['#200810','#150508','#0a0204'], spA:'220,100,140', spB:'20,0,5',      gr:'210,90,130',  br:'240,110,150', star:false }
+  ];
+
+  function makeBackground(config, size, dpr) {
+    size = size || SIZE;
+    dpr = dpr || DPR;
+    var c = document.createElement('canvas');
+    c.width = size * dpr;
+    c.height = size * dpr;
+    var g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var grad = g.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0,   config.bg[0]);
+    grad.addColorStop(0.5, config.bg[1]);
+    grad.addColorStop(1,   config.bg[2]);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+
+    var areaFactor = (size * size) / (SIZE * SIZE);
+    var speckCount = Math.max(30, Math.floor(1800 * areaFactor));
+
+    for (var i = 0; i < speckCount; i++) {
+      var x = Math.random() * size;
+      var y = Math.random() * size;
+      var r = (Math.random() * 1.7 + 0.25) * Math.max(0.5, size / SIZE);
+      var a = Math.random() * 0.045 + 0.008;
+      g.fillStyle = Math.random() > 0.45
+        ? 'rgba(' + config.spA + ',' + a + ')'
+        : 'rgba(' + config.spB + ',' + (a * 1.8) + ')';
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+
+    if (config.star) {
+      var starCount = Math.max(10, Math.floor(55 * areaFactor));
+      for (var s = 0; s < starCount; s++) {
+        var sx = Math.random() * size;
+        var sy = Math.random() * size;
+        var sr = Math.max(0.4, (Math.random() * 1.4 + 0.4) * Math.max(0.4, size / SIZE));
+        var sa = Math.random() * 0.7 + 0.3;
+        g.fillStyle = 'rgba(' + config.spA + ',' + sa + ')';
+        g.beginPath(); g.arc(sx, sy, sr, 0, Math.PI * 2); g.fill();
+
+        if (sr > 1 && Math.random() < 0.4) {
+          g.strokeStyle = 'rgba(' + config.spA + ',' + (sa * 0.5) + ')';
+          g.lineWidth = 0.8;
+          g.beginPath();
+          g.moveTo(sx - sr * 2.5, sy); g.lineTo(sx + sr * 2.5, sy);
+          g.moveTo(sx, sy - sr * 2.5); g.lineTo(sx, sy + sr * 2.5);
+          g.stroke();
+        }
+      }
+    }
+
+    var cell = size / COLS;
+    g.strokeStyle = 'rgba(' + config.gr + ',0.042)';
+    g.lineWidth = 1;
+    for (var k = 1; k < COLS; k++) {
+      g.beginPath(); g.moveTo(k * cell + 0.5, 0); g.lineTo(k * cell + 0.5, size); g.stroke();
+      g.beginPath(); g.moveTo(0, k * cell + 0.5); g.lineTo(size, k * cell + 0.5); g.stroke();
+    }
+
+    g.strokeStyle = 'rgba(' + config.br + ',0.10)';
+    g.lineWidth = 2;
+    g.strokeRect(1, 1, size - 2, size - 2);
+
+    return c;
+  }
+
+  function makeVignette() {
+    var c = document.createElement('canvas');
+    c.width = SIZE * DPR; c.height = SIZE * DPR;
+    var g = c.getContext('2d');
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    var rg = g.createRadialGradient(SIZE/2, SIZE/2, SIZE*0.30,
+                                    SIZE/2, SIZE/2, SIZE*0.80);
+    rg.addColorStop(0, 'rgba(0,0,0,0)');
+    rg.addColorStop(1, 'rgba(0,0,0,0.58)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, SIZE, SIZE);
+    return c;
+  }
+
+  var currentBgIndex = 0;
+  var bgMode = 'fixed';
+  var bgFixedIndex = 0;
+
+  var bgCanvas = makeBackground(BACKGROUNDS[0], SIZE);
+  var vigCanvas = makeVignette();
+
+  var savedBgMode = store.get('snake_bgmode');
+  if (savedBgMode === 'random') bgMode = 'random';
+  var savedBgIdx = parseInt(store.get('snake_bgidx'), 10);
+  if (isFinite(savedBgIdx) && savedBgIdx >= 0 && savedBgIdx < BACKGROUNDS.length) {
+    bgFixedIndex = savedBgIdx;
+    currentBgIndex = savedBgIdx;
+    bgCanvas = makeBackground(BACKGROUNDS[bgFixedIndex], SIZE);
+  }
+
+  function applyBackgroundByIndex(idx) {
+    currentBgIndex = idx;
+    bgCanvas = makeBackground(BACKGROUNDS[idx], SIZE);
+  }
+  function pickRandomBgIndex() {
+    if (BACKGROUNDS.length <= 1) return 0;
+    var idx, guard = 0;
+    do { idx = Math.floor(Math.random() * BACKGROUNDS.length); guard++; }
+    while (idx === currentBgIndex && guard < 20);
+    return idx;
+  }
+  function pickNewBackgroundForNewGame() {
+    if (bgMode === 'random') applyBackgroundByIndex(pickRandomBgIndex());
+    else                     applyBackgroundByIndex(bgFixedIndex);
+  }
+
+  /* ============================================================
+     DOM
+     ============================================================ */
+  var scoreEl    = document.getElementById('score');
+  var speedEl    = document.getElementById('speed');
+  var bestEl     = document.getElementById('best');
+  var boardEl    = document.getElementById('board');
+  var overlay    = document.getElementById('overlay');
+  var ovTitle    = document.getElementById('ovTitle');
+  var ovText     = document.getElementById('ovText');
+  var ovBtn      = document.getElementById('ovBtn');
+  var btnPause   = document.getElementById('btnPause');
+  var btnBoost   = document.getElementById('btnBoost');
+  var btnRestart = document.getElementById('btnRestart');
+  var btnMute    = document.getElementById('btnMute');
+  var btnBg      = document.getElementById('btnBg');
+  var btnHelp    = document.getElementById('btnHelp');
+  var hintEl     = document.getElementById('hint');
+  var picker     = document.getElementById('picker');
+  var pickerGrid = document.getElementById('pickerGrid');
+  var pickerClose= document.getElementById('pickerClose');
+  var helpModal  = document.getElementById('help');
+  var helpClose  = document.getElementById('helpClose');
+  var spdEach    = document.getElementById('spdEach');
+  var spdEvery10 = document.getElementById('spdEvery10');
+  var spdManual  = document.getElementById('spdManual');
+  var speedSliderWrap = document.getElementById('speedSliderWrap');
+  var speedRange = document.getElementById('speedRange');
+  var speedVal   = document.getElementById('speedVal');
+  var joystickEl = document.getElementById('joystick');
+  var joystickKnob = document.getElementById('joystickKnob');
+  var joystickBase = joystickEl ? joystickEl.querySelector('.joystick-base') : null;
+
+  var pauseIcon = btnPause.querySelector('.btn-icon');
+  var pauseLabel = btnPause.querySelector('.btn-label');
+  var boostIcon = btnBoost.querySelector('.btn-icon');
+  var boostLabel = btnBoost.querySelector('.btn-label');
+
+  /* ============================================================
+     Состояние игры
+     ============================================================ */
+  var snake, prevSnake, dir, queue, food, score, stepMs, acc, state, won;
+  var progress = 0;
+  var particles = [];
+  var decals = [];
+  var shake = 0;
+  var headAngle = 0;
+  var timeNow = 0;
+  var sparkFlash = 0;
+
+  var boostActive = false;
+  var boostUntil = 0;
+  var boostCooldownUntil = 0;
+
+  var best = parseInt(store.get('snake_best'), 10);
+  if (!isFinite(best) || best < 0) best = 0;
+  bestEl.textContent = best;
+
+  /* ============================================================
+     Геометрия
+     ============================================================ */
+  function catmull(p0, p1, p2, p3, t) {
+    var t2 = t * t, t3 = t2 * t;
+    return {
+      x: 0.5 * ((2*p1.x) + (-p0.x + p2.x)*t +
+        (2*p0.x - 5*p1.x + 4*p2.x - p3.x)*t2 +
+        (-p0.x + 3*p1.x - 3*p2.x + p3.x)*t3),
+      y: 0.5 * ((2*p1.y) + (-p0.y + p2.y)*t +
+        (2*p0.y - 5*p1.y + 4*p2.y - p3.y)*t2 +
+        (-p0.y + 3*p1.y - 3*p2.y + p3.y)*t3)
+    };
+  }
+
+  function smoothPath(pts, per) {
+    var n = pts.length;
+    if (n < 2) return pts.slice();
+    var out = [];
+    for (var i = 0; i < n - 1; i++) {
+      var p0 = pts[i-1] || pts[i];
+      var p1 = pts[i];
+      var p2 = pts[i+1];
+      var p3 = pts[i+2] || pts[i+1];
+      for (var s = 0; s < per; s++) out.push(catmull(p0, p1, p2, p3, s / per));
+    }
+    out.push(pts[n - 1]);
+    return out;
+  }
+
+  function widthAt(t) { return CELL * 0.92 * (1 - 0.76 * Math.pow(t, 0.72)); }
+  function colorAt(t) {
+    var h = 88 + 44 * t, s = 48 - 9 * t, l = 46 - 28 * t;
+    return 'hsl(' + h + ',' + s + '%,' + l + '%)';
+  }
+
+  /* ============================================================
+     Игровая логика
+     ============================================================ */
+  function reset() {
+    snake = [{x:9,y:10},{x:8,y:10},{x:7,y:10}];
+    prevSnake = snake.map(function (s) { return {x:s.x, y:s.y}; });
+    dir = {x:1, y:0};
+    queue = [];
+    score = 0;
+    eatenCount = 0;
+
+    if (speedMode === 'manual') speedLevel = manualLevel;
+    else                        speedLevel = SPEED_LEVEL_START;
+
+    stepMs = stepMsFromLevel(speedLevel);
+    acc = 0;
+    progress = 0;
+    won = false;
+    particles = [];
+    decals = [];
+    shake = 0;
+    headAngle = 0;
+    sparkFlash = 0;
+    boostActive = false;
+    boostUntil = 0;
+    boostCooldownUntil = 0;
+    boardEl.classList.remove('boost');
+    placeFood();
+    updateHUD();
+    updateSpeedHUD();
+    updateBoostBtn();
+  }
+
+  function placeFood() {
+    var free = [], x, y, i, taken;
+    for (y = 0; y < ROWS; y++) {
+      for (x = 0; x < COLS; x++) {
+        taken = false;
+        for (i = 0; i < snake.length; i++) {
+          if (snake[i].x === x && snake[i].y === y) { taken = true; break; }
+        }
+        if (!taken) free.push({x:x, y:y});
+      }
+    }
+    if (free.length === 0) { food = null; won = true; return; }
+    var cell = free[(Math.random() * free.length) | 0];
+    food = {x: cell.x, y: cell.y, angle: Math.random() * Math.PI * 2};
+  }
+
+  function updateHUD() {
+    scoreEl.textContent = score;
+    bestEl.textContent = best;
+  }
+
+  function updateSpeedHUD() {
+    speedEl.textContent = speedLevel;
+    if (boostActive) speedEl.classList.add('boost');
+    else             speedEl.classList.remove('boost');
+  }
+
+  function updatePauseBtn() {
+    if (state === 'paused') {
+      pauseIcon.textContent = '▶';
+      pauseLabel.textContent = 'Продолжить';
+      btnPause.title = 'Продолжить';
+    } else {
+      pauseIcon.textContent = '⏸';
+      pauseLabel.textContent = 'Пауза';
+      btnPause.title = 'Пауза';
+    }
+  }
+
+  function updateBoostBtn() {
+    var now = performance.now();
+    if (boostActive) {
+      btnBoost.classList.remove('ready', 'cooling');
+      btnBoost.classList.add('active');
+      var left = Math.max(0, (boostUntil - now) / 1000).toFixed(1);
+      boostIcon.textContent = '⚡';
+      boostLabel.textContent = left + 'с';
+      btnBoost.title = 'Рывок активен: ' + left + 'с';
+    } else if (now < boostCooldownUntil) {
+      btnBoost.classList.remove('ready', 'active');
+      btnBoost.classList.add('cooling');
+      var cd = Math.ceil((boostCooldownUntil - now) / 1000);
+      boostIcon.textContent = '⏳';
+      boostLabel.textContent = cd + 'с';
+      btnBoost.title = 'Перезарядка: ' + cd + 'с';
+    } else {
+      btnBoost.classList.remove('active', 'cooling');
+      btnBoost.classList.add('ready');
+      boostIcon.textContent = '⚡';
+      boostLabel.textContent = 'Рывок';
+      btnBoost.title = 'Рывок';
+    }
+  }
+
+  function applySpeedIncrease() {
+    var previousLevel = speedLevel;
+
+    if (speedMode === 'each') {
+      speedLevel = Math.min(SPEED_LEVEL_MAX, speedLevel + 1);
+    } else if (speedMode === 'every10') {
+      if (eatenCount % 10 === 0) {
+        speedLevel = Math.min(SPEED_LEVEL_MAX, speedLevel + 1);
+      }
+    }
+
+    if (speedLevel !== previousLevel) {
+      stepMs = stepMsFromLevel(speedLevel);
+      playSpeedUpSound();
+      updateSpeedHUD();
+    }
+  }
+
+  function pushDir(nd) {
+    if (state === 'start' || state === 'over') startGame();
+    if (state !== 'playing') return;
+    var last = queue.length ? queue[queue.length - 1] : dir;
+    if (nd.x === last.x && nd.y === last.y) return;
+    if (nd.x === -last.x && nd.y === -last.y) return;
+    if (queue.length < 2) queue.push(nd);
+  }
+
+  function step() {
+    if (queue.length) dir = queue.shift();
+
+    prevSnake = snake.map(function (s) { return {x:s.x, y:s.y}; });
+
+    var head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+      die(head, true); return;
+    }
+    for (var i = 0; i < snake.length - 1; i++) {
+      if (snake[i].x === head.x && snake[i].y === head.y) {
+        die(head, false); return;
+      }
+    }
+
+    snake.unshift(head);
+
+    if (food && head.x === food.x && head.y === food.y) {
+      score += 10;
+      eatenCount++;
+
+      playEatSound();
+      sparkBurst(food.x, food.y);
+      shake = Math.max(shake, 5);
+      sparkFlash = 1;
+
+      placeFood();
+      updateHUD();
+      applySpeedIncrease();
+
+      if (won) { gameOver(true); return; }
+    } else {
+      snake.pop();
+    }
+  }
+
+  function die(pos, wall) {
+    burst(pos.x - (wall ? dir.x * 0.5 : 0),
+          pos.y - (wall ? dir.y * 0.5 : 0), 24, true);
+    shake = 10;
+    playDeathSound();
+    gameOver(false);
+  }
+
+  function gameOver(isWin) {
+    if (score > best) {
+      best = score;
+      store.set('snake_best', String(best));
+      updateHUD();
+      if (sdkReady && ysdk && ysdk.getPlayer) {
+        ysdk.getPlayer({scopes:false})
+          .then(function (p) { return p.setStats({ bestScore: best }); })
+          .catch(function (err) { console.warn('setStats error:', err); });
+      }
+    }
+    boostActive = false;
+    boardEl.classList.remove('boost');
+    if (isWin) {
+      state = 'over';
+      showOverlay('Победа! 🎉',
+        'Вся поляна съедена!<br>Очки: <b style="color:#8ee87a">' + score + '</b>',
+        'Ещё раз');
+      updatePauseBtn();
+      return;
+    }
+    setState('over');
+  }
+
+  /* ============================================================
+     Искры
+     ============================================================ */
+  var SPARK_COLORS = [
+    '#ff5c8a','#ff8a3d','#ffd93d','#7be37b','#5cc8ff',
+    '#b980ff','#7bffd9','#ff6bd6','#fff3b0'
+  ];
+  function randSparkColor() {
+    return SPARK_COLORS[(Math.random() * SPARK_COLORS.length) | 0];
+  }
+
+  function sparkBurst(cx, cy) {
+    var px = (cx + 0.5) * CELL, py = (cy + 0.5) * CELL;
+
+    for (var i = 0; i < 16; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = 55 + Math.random() * 145;
+      particles.push({
+        x: px + (Math.random()-0.5)*CELL*0.4,
+        y: py + (Math.random()-0.5)*CELL*0.4,
+        vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 45,
+        life: 0.55 + Math.random()*0.55, max: 0,
+        size: 1.6 + Math.random()*2.6,
+        col: randSparkColor(), spark: true,
+        twinkle: Math.random()*Math.PI*2
+      });
+      particles[particles.length-1].max = particles[particles.length-1].life;
+    }
+    for (var j = 0; j < 10; j++) {
+      var a2 = Math.random() * Math.PI * 2;
+      var sp2 = 25 + Math.random() * 70;
+      particles.push({
+        x: px, y: py,
+        vx: Math.cos(a2)*sp2, vy: Math.sin(a2)*sp2 - 20,
+        life: 0.35 + Math.random()*0.4, max: 0,
+        size: 0.9 + Math.random()*1.4,
+        col: randSparkColor(), spark: true,
+        twinkle: Math.random()*Math.PI*2
+      });
+      particles[particles.length-1].max = particles[particles.length-1].life;
+    }
+    var haloCol = randSparkColor();
+    decals.push({
+      x: px, y: py, r: CELL * 0.5,
+      life: 2.6 + Math.random(), max: 3.6, a: 0.42, col: haloCol
+    });
+  }
+
+  function updateParticles(dt) {
+    var s = dt / 1000;
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.x += p.vx * s; p.y += p.vy * s;
+      p.vy += 300 * s; p.vx *= 0.97;
+      p.life -= s;
+      if (p.spark) p.twinkle += s * 22;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    for (var k = decals.length - 1; k >= 0; k--) {
+      decals[k].life -= s;
+      if (decals[k].life <= 0) decals.splice(k, 1);
+    }
+    if (sparkFlash > 0) sparkFlash = Math.max(0, sparkFlash - s * 3.6);
+  }
+
+  function hexToRgb(hex) {
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var n = parseInt(h, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function drawDecals() {
+    for (var i = 0; i < decals.length; i++) {
+      var d = decals[i];
+      var a = Math.min(1, d.life / 1.5) * d.a;
+      if (a <= 0) continue;
+      var col = d.col || '#ffd93d';
+      var rgb = hexToRgb(col);
+      var grd = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r);
+      grd.addColorStop(0, 'rgba('+rgb.r+','+rgb.g+','+rgb.b+','+(a*0.7)+')');
+      grd.addColorStop(1, 'rgba('+rgb.r+','+rgb.g+','+rgb.b+',0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawParticles() {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var a = Math.max(0, p.life / p.max);
+      var tw = p.spark ? (0.6 + 0.4 * Math.sin(p.twinkle)) : 1;
+      ctx.globalAlpha = Math.min(1, a * 1.5) * tw;
+      ctx.fillStyle = p.col;
+      if (p.spark) {
+        var sz = p.size * (0.4 + a * 0.6);
+        ctx.save();
+        ctx.shadowColor = p.col; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(p.x, p.y, sz, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.twinkle * 0.3);
+        ctx.strokeStyle = p.col; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-sz*2.1, 0); ctx.lineTo(sz*2.1, 0);
+        ctx.moveTo(0, -sz*2.1); ctx.lineTo(0, sz*2.1);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.5 + a * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function burst(cx, cy, n, big) {
+    if (cx == null) return;
+    var px = (cx + 0.5) * CELL, py = (cy + 0.5) * CELL;
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = (30 + Math.random() * 90) * (big ? 1.6 : 1);
+      particles.push({
+        x: px, y: py,
+        vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 30,
+        life: 0.45 + Math.random()*0.5, max: 1,
+        size: 1.3 + Math.random()*2.4,
+        col: big ? '#8ee87a' : '#b8d4a0', spark: false
+      });
+      particles[particles.length-1].max = particles[particles.length-1].life;
+    }
+  }
+
+  /* ============================================================
+     Змейка
+     ============================================================ */
+  function drawSnake() {
+    var pts = [], i;
+    for (i = 0; i < snake.length; i++) {
+      var cur = snake[i];
+      var prv = prevSnake[i] || cur;
+      pts.push({
+        x: (prv.x + (cur.x - prv.x)*progress + 0.5) * CELL,
+        y: (prv.y + (cur.y - prv.y)*progress + 0.5) * CELL
+      });
+    }
+    var dense = smoothPath(pts, 5);
+    var N = dense.length;
+    if (N < 2) return;
+    var CHUNK = 6;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 5;
+    ctx.beginPath();
+    ctx.moveTo(dense[0].x, dense[0].y);
+    for (i = 1; i < N; i++) ctx.lineTo(dense[i].x, dense[i].y);
+    ctx.lineWidth = CELL * 0.80;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.stroke();
+    ctx.restore();
+
+    if (boostActive) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.beginPath();
+      ctx.moveTo(dense[0].x, dense[0].y);
+      for (i = 1; i < N; i++) ctx.lineTo(dense[i].x, dense[i].y);
+      ctx.lineWidth = CELL * 0.95;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(123,211,255,0.18)';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (var k = 0; k < N - 1; k += CHUNK) {
+      var end = Math.min(k + CHUNK, N - 1);
+      var tm = ((k + end) / 2) / (N - 1);
+      ctx.beginPath();
+      ctx.moveTo(dense[k].x, dense[k].y);
+      for (var j = k + 1; j <= end; j++) ctx.lineTo(dense[j].x, dense[j].y);
+      ctx.lineWidth = widthAt(tm);
+      ctx.strokeStyle = colorAt(tm);
+      ctx.stroke();
+    }
+
+    var spacing = CELL * 0.58, accum = CELL * 0.55;
+    for (i = 1; i < N; i++) {
+      var dx = dense[i].x - dense[i-1].x;
+      var dy = dense[i].y - dense[i-1].y;
+      var seg = Math.sqrt(dx*dx + dy*dy);
+      accum += seg;
+      if (accum >= spacing && seg > 0.0001) {
+        accum = 0;
+        var t = i / (N - 1);
+        var w = widthAt(t);
+        ctx.save();
+        ctx.translate(dense[i].x, dense[i].y);
+        ctx.rotate(Math.atan2(dy, dx));
+        ctx.beginPath();
+        ctx.moveTo(-w*0.30, 0);
+        ctx.lineTo(0, -w*0.37);
+        ctx.lineTo(w*0.30, 0);
+        ctx.lineTo(0, w*0.37);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(18,42,18,0.32)';
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var pass = 0; pass < 2; pass++) {
+      var wf = pass === 0 ? 0.42 : 0.20;
+      var af = pass === 0 ? 0.05 : 0.07;
+      for (var kk = 0; kk < N - 1; kk += CHUNK) {
+        var e2 = Math.min(kk + CHUNK, N - 1);
+        var t2 = ((kk + e2) / 2) / (N - 1);
+        ctx.beginPath();
+        ctx.moveTo(dense[kk].x, dense[kk].y);
+        for (var jj = kk + 1; jj <= e2; jj++) ctx.lineTo(dense[jj].x, dense[jj].y);
+        ctx.lineWidth = widthAt(t2) * wf;
+        ctx.strokeStyle = 'rgba(225,255,215,' + af + ')';
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    drawHead(dense[0].x, dense[0].y, headAngle);
+  }
+
+  function drawHead(px, py, ang) {
+    var L = CELL * 1.05, hw = CELL * 0.46;
+    ctx.save();
+    ctx.translate(px, py); ctx.rotate(ang);
+
+    ctx.beginPath();
+    ctx.moveTo(L * 0.50, 0);
+    ctx.bezierCurveTo(L*0.50, -hw*0.42, L*0.34, -hw, L*0.06, -hw);
+    ctx.bezierCurveTo(-L*0.22, -hw, -L*0.48, -hw*0.72, -L*0.50, 0);
+    ctx.bezierCurveTo(-L*0.48, hw*0.72, -L*0.22, hw, L*0.06, hw);
+    ctx.bezierCurveTo(L*0.34, hw, L*0.50, hw*0.42, L*0.50, 0);
+    ctx.closePath();
+
+    var g = ctx.createLinearGradient(-L*0.5, 0, L*0.5, 0);
+    if (boostActive) {
+      g.addColorStop(0, 'hsl(150,55%,30%)');
+      g.addColorStop(0.55, 'hsl(160,70%,48%)');
+      g.addColorStop(1, 'hsl(170,85%,62%)');
+    } else {
+      g.addColorStop(0, 'hsl(118,42%,24%)');
+      g.addColorStop(0.55, 'hsl(96,48%,40%)');
+      g.addColorStop(1, 'hsl(88,54%,52%)');
+    }
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(15,38,15,0.28)';
+    for (var s = -1; s <= 1; s += 2) {
+      ctx.beginPath();
+      ctx.ellipse(-L*0.10, s*hw*0.42, L*0.26, hw*0.15, s*0.25, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    var ex = L*0.17, ey = hw*0.62, er = CELL*0.115;
+    for (var k = -1; k <= 1; k += 2) {
+      var yE = ey * k;
+      ctx.beginPath();
+      ctx.ellipse(ex, yE, er*1.18, er*1.06, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(8,18,8,0.55)'; ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ex, yE, er*0.92, 0, Math.PI*2);
+      var ig = ctx.createRadialGradient(ex-er*0.3, yE-er*0.3, er*0.1, ex, yE, er);
+      ig.addColorStop(0, '#f7dd7c');
+      ig.addColorStop(0.6, '#d9a326');
+      ig.addColorStop(1, '#8a5f10');
+      ctx.fillStyle = ig; ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(ex, yE, er*0.22, er*0.80, 0, 0, Math.PI*2);
+      ctx.fillStyle = '#080906'; ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ex+er*0.32, yE-er*0.36, er*0.20, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(10,20,10,0.75)';
+    for (var n = -1; n <= 1; n += 2) {
+      ctx.beginPath(); ctx.arc(L*0.40, hw*0.22*n, 0.9, 0, Math.PI*2); ctx.fill();
+    }
+
+    var langPeriod = boostActive ? 900 : 1700;
+    var cyc = (timeNow % langPeriod) / langPeriod;
+    var ext = 0;
+    if (cyc < 0.16) ext = Math.sin((cyc / 0.16) * Math.PI);
+    if (ext > 0.02) {
+      var tl = CELL * 0.85 * ext;
+      ctx.strokeStyle = '#e05070'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(L*0.46, 0); ctx.lineTo(L*0.46 + tl*0.62, 0); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(L*0.46 + tl*0.62, 0); ctx.lineTo(L*0.46 + tl, -tl*0.34);
+      ctx.moveTo(L*0.46 + tl*0.62, 0); ctx.lineTo(L*0.46 + tl,  tl*0.34);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ============================================================
+     Мышка-еда
+     ============================================================ */
+  function drawFood() {
+    if (!food) return;
+    var cx = (food.x + 0.5) * CELL, cy = (food.y + 0.5) * CELL;
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    ctx.beginPath();
+    ctx.ellipse(1, CELL*0.20, CELL*0.40, CELL*0.14, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fill();
+
+    var wob = Math.sin(timeNow / 640) * 0.09;
+    ctx.rotate(food.angle + wob);
+    var br = 1 + Math.sin(timeNow / 480) * 0.035;
+
+    ctx.beginPath();
+    ctx.moveTo(-CELL*0.26, 0);
+    ctx.quadraticCurveTo(-CELL*0.60, -CELL*0.12, -CELL*0.72, CELL*0.22);
+    ctx.strokeStyle = '#c9a394'; ctx.lineWidth = 2.1;
+    ctx.lineCap = 'round'; ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(-CELL*0.02, 0, CELL*0.34, CELL*0.25*br, 0, 0, Math.PI*2);
+    var bg = ctx.createLinearGradient(0, -CELL*0.25, 0, CELL*0.25);
+    bg.addColorStop(0, '#8a7768');
+    bg.addColorStop(0.55, '#9c8977');
+    bg.addColorStop(1, '#6f5f52');
+    ctx.fillStyle = bg; ctx.fill();
+
+    var ears = [[0.24, -0.17, 0.115], [0.37, -0.13, 0.095]];
+    for (var e = 0; e < 2; e++) {
+      var ex = ears[e][0]*CELL, ey = ears[e][1]*CELL, er = ears[e][2]*CELL;
+      ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI*2);
+      ctx.fillStyle = '#8d7a6b'; ctx.fill();
+      ctx.beginPath(); ctx.arc(ex, ey, er*0.58, 0, Math.PI*2);
+      ctx.fillStyle = '#d99a9a'; ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.ellipse(CELL*0.30, 0, CELL*0.20, CELL*0.17, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#a08c7a'; ctx.fill();
+    ctx.beginPath();
+    ctx.arc(CELL*0.47, 0, CELL*0.045, 0, Math.PI*2);
+    ctx.fillStyle = '#e39a9a'; ctx.fill();
+    ctx.beginPath();
+    ctx.arc(CELL*0.35, -CELL*0.055, CELL*0.036, 0, Math.PI*2);
+    ctx.fillStyle = '#171310'; ctx.fill();
+    ctx.beginPath();
+    ctx.arc(CELL*0.342, -CELL*0.068, CELL*0.013, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* ============================================================
+     Кадр
+     ============================================================ */
+  function render() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (shake > 0.3) {
+      ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+    }
+    ctx.drawImage(bgCanvas, 0, 0, SIZE, SIZE);
+    drawDecals();
+    drawFood();
+    drawSnake();
+    drawParticles();
+
+    if (sparkFlash > 0.01) {
+      ctx.fillStyle = 'rgba(255,235,150,' + (sparkFlash*0.14) + ')';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
+    if (boostActive) {
+      ctx.fillStyle = 'rgba(120,210,255,0.06)';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
+    ctx.drawImage(vigCanvas, 0, 0, SIZE, SIZE);
+  }
+
+  /* ============================================================
+     Игровой цикл
+     ============================================================ */
+  var lastTime = 0, boostBtnAccum = 0;
+
+  function loop(now) {
+    if (!lastTime) lastTime = now;
+    var dt = now - lastTime;
+    lastTime = now;
+    if (dt > 200) dt = 200;
+    timeNow = now;
+
+    if (boostActive && now >= boostUntil) {
+      boostActive = false;
+      boardEl.classList.remove('boost');
+      updateSpeedHUD();
+    }
+
+    var target = Math.atan2(dir.y, dir.x);
+    var da = target - headAngle;
+    while (da >  Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    headAngle += da * (1 - Math.exp(-dt / 55));
+
+    var effectiveStep = boostActive ? stepMs * BOOST_MULT : stepMs;
+
+    if (state === 'playing') {
+      acc += dt;
+      var guard = 0;
+      while (acc >= effectiveStep && guard++ < 6) {
+        acc -= effectiveStep;
+        step();
+        if (state !== 'playing') break;
+      }
+      progress = (state === 'playing') ? Math.min(1, acc / effectiveStep) : progress;
+    } else {
+      progress = 0;
+    }
+
+    updateParticles(dt);
+    if (shake > 0.3) shake *= Math.exp(-dt / 95);
+    else shake = 0;
+
+    boostBtnAccum += dt;
+    if (boostBtnAccum > 50) {
+      boostBtnAccum = 0;
+      updateBoostBtn();
+    }
+
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  /* ============================================================
+     Рывок
+     ============================================================ */
+  function activateBoost() {
+    if (state !== 'playing') return;
+    var now = performance.now();
+    if (boostActive) return;
+    if (now < boostCooldownUntil) return;
+
+    boostActive = true;
+    boostUntil = now + BOOST_DURATION;
+    boostCooldownUntil = boostUntil + BOOST_COOLDOWN;
+    boardEl.classList.add('boost');
+    playBoostSound();
+    updateSpeedHUD();
+    updateBoostBtn();
+  }
+
+  /* ============================================================
+     РЕЖИМЫ СКОРОСТИ
+     ============================================================ */
+  function setSpeedMode(mode) {
+    speedMode = mode;
+    store.set('snake_speedmode', mode);
+
+    spdEach.classList.toggle('active', mode === 'each');
+    spdEvery10.classList.toggle('active', mode === 'every10');
+    spdManual.classList.toggle('active', mode === 'manual');
+
+    if (mode === 'manual') speedSliderWrap.classList.add('open');
+    else                   speedSliderWrap.classList.remove('open');
+
+    if (mode === 'manual') {
+      speedLevel = manualLevel;
+    } else if (state === 'start' || state === 'over') {
+      speedLevel = SPEED_LEVEL_START;
+    }
+
+    stepMs = stepMsFromLevel(speedLevel);
+    updateSpeedHUD();
+    layoutMobile();
+  }
+
+  speedRange.addEventListener('input', function () {
+    manualLevel = parseInt(speedRange.value, 10);
+    if (!isFinite(manualLevel)) manualLevel = 5;
+    speedVal.textContent = manualLevel;
+    store.set('snake_manuallevel', String(manualLevel));
+
+    if (speedMode === 'manual') {
+      speedLevel = manualLevel;
+      stepMs = stepMsFromLevel(speedLevel);
+      updateSpeedHUD();
+    }
+  });
+
+  function initSpeedUI() {
+    speedRange.min = String(SPEED_LEVEL_MIN);
+    speedRange.max = String(SPEED_LEVEL_MAX);
+    speedRange.value = String(manualLevel);
+    speedVal.textContent = manualLevel;
+    setSpeedMode(speedMode);
+  }
+
+  spdEach.addEventListener('click', function () { setSpeedMode('each'); });
+  spdEvery10.addEventListener('click', function () { setSpeedMode('every10'); });
+  spdManual.addEventListener('click', function () { setSpeedMode('manual'); });
+
+  /* ============================================================
+     Состояния / оверлей
+     ============================================================ */
+  function setState(s) {
+    state = s;
+    if (s === 'start') {
+      showOverlay('Готов?',
+        'Стрелки или WASD — движение.<br>Shift — рывок. Пробел — пауза.<br>На телефоне — джойстик справа.',
+        'Играть');
+    } else if (s === 'paused') {
+      showOverlay('Пауза', 'Отдохни немного 😌', 'Продолжить');
+    } else if (s === 'over') {
+      var rec = (score > 0 && score >= best) ? '<br>🏆 Новый рекорд!' : '';
+      showOverlay('Игра окончена',
+        'Очки: <b style="color:#8ee87a">' + score + '</b>' + rec, 'Ещё раз');
+    } else {
+      hideOverlay();
+    }
+    updatePauseBtn();
+  }
+
+  function showOverlay(title, text, btn) {
+    ovTitle.innerHTML = title;
+    ovText.innerHTML = text;
+    ovBtn.textContent = btn;
+    overlay.classList.remove('hidden');
+  }
+  function hideOverlay() { overlay.classList.add('hidden'); }
+
+  function startGame() {
+    pickNewBackgroundForNewGame();
+    reset();
+    setState('playing');
+  }
+  function pauseGame()  { if (state === 'playing') setState('paused'); }
+  function resumeGame() { if (state === 'paused')  setState('playing'); }
+  function togglePause() {
+    if (state === 'playing') pauseGame();
+    else if (state === 'paused') resumeGame();
+    else startGame();
+  }
+
+  /* ============================================================
+     Клавиатура
+     ============================================================ */
+  var KEYS = {
+    ArrowUp:    {x:0,y:-1}, w:{x:0,y:-1}, W:{x:0,y:-1}, 'ц':{x:0,y:-1},
+    ArrowDown:  {x:0,y:1},  s:{x:0,y:1},  S:{x:0,y:1},  'ы':{x:0,y:1},
+    ArrowLeft:  {x:-1,y:0}, a:{x:-1,y:0}, A:{x:-1,y:0}, 'ф':{x:-1,y:0},
+    ArrowRight: {x:1,y:0},  d:{x:1,y:0},  D:{x:1,y:0},  'в':{x:1,y:0}
+  };
+
+  document.addEventListener('keydown', function (e) {
+    ensureAudio();
+    if (e.key === 'Shift') { e.preventDefault(); activateBoost(); return; }
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); togglePause(); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (state === 'over' || state === 'start') startGame();
+      return;
+    }
+    var nd = KEYS[e.key];
+    if (nd) { e.preventDefault(); pushDir(nd); }
+  });
+
+  /* ============================================================
+     Свайпы
+     ============================================================ */
+  var touchStart = null;
+
+  canvas.addEventListener('touchstart', function (e) {
+    e.preventDefault(); ensureAudio();
+    var t = e.changedTouches[0];
+    touchStart = {x: t.clientX, y: t.clientY};
+    if (state === 'start' || state === 'over') startGame();
+    else if (state === 'paused') resumeGame();
+  }, {passive: false});
+
+  canvas.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+  }, {passive: false});
+
+  canvas.addEventListener('touchend', function (e) {
+    if (!touchStart) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - touchStart.x;
+    var dy = t.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) < 22 && Math.abs(dy) < 22) return;
+    if (Math.abs(dx) > Math.abs(dy)) pushDir({x: dx > 0 ? 1 : -1, y: 0});
+    else                             pushDir({x: 0, y: dy > 0 ? 1 : -1});
+  }, {passive: true});
+
+  canvas.addEventListener('mousedown', function (e) {
+    e.preventDefault(); ensureAudio();
+    if (state === 'start' || state === 'over') startGame();
+    else if (state === 'paused') resumeGame();
+  });
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  /* ============================================================
+     КРУГЛЫЙ ДЖОЙСТИК
+     ============================================================ */
+  var joystickActive = false;
+  var JOYSTICK_DEADZONE = 12;
+  var joystickPointerId = null;
+
+  function joystickGetCenter() {
+    var rect = joystickBase.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      radius: rect.width / 2
+    };
+  }
+
+  function joystickUpdate(clientX, clientY) {
+    var c = joystickGetCenter();
+    var dx = clientX - c.x;
+    var dy = clientY - c.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+
+    var maxR = c.radius * 0.55;
+    var kx = dx, ky = dy;
+    if (dist > maxR) {
+      kx = dx / dist * maxR;
+      ky = dy / dist * maxR;
+    }
+
+    joystickKnob.style.transform = 'translate(' + kx.toFixed(1) + 'px, ' + ky.toFixed(1) + 'px)';
+
+    if (dist < JOYSTICK_DEADZONE) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      pushDir({ x: dx > 0 ? 1 : -1, y: 0 });
+    } else {
+      pushDir({ x: 0, y: dy > 0 ? 1 : -1 });
+    }
+  }
+
+  function joystickReset() {
+    joystickKnob.style.transform = 'translate(0px, 0px)';
+    joystickEl.classList.remove('active');
+  }
+
+  if (joystickEl) {
+    joystickEl.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      ensureAudio();
+
+      if (state === 'start' || state === 'over') startGame();
+      else if (state === 'paused') resumeGame();
+
+      joystickActive = true;
+      joystickPointerId = e.pointerId;
+      joystickEl.classList.add('active');
+
+      try { joystickEl.setPointerCapture(e.pointerId); } catch (err) {}
+
+      joystickUpdate(e.clientX, e.clientY);
+    });
+
+    joystickEl.addEventListener('pointermove', function (e) {
+      if (!joystickActive) return;
+      if (e.pointerId !== joystickPointerId) return;
+      e.preventDefault();
+      joystickUpdate(e.clientX, e.clientY);
+    });
+
+    function endPointer(e) {
+      if (!joystickActive) return;
+      if (e.pointerId !== joystickPointerId) return;
+      joystickActive = false;
+      joystickPointerId = null;
+      try { joystickEl.releasePointerCapture(e.pointerId); } catch (err) {}
+      joystickReset();
+    }
+
+    joystickEl.addEventListener('pointerup', endPointer);
+    joystickEl.addEventListener('pointercancel', endPointer);
+    joystickEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    if (!window.PointerEvent) {
+      joystickEl.addEventListener('touchstart', function (e) {
+        e.preventDefault(); ensureAudio();
+        if (state === 'start' || state === 'over') startGame();
+        else if (state === 'paused') resumeGame();
+        joystickActive = true;
+        joystickEl.classList.add('active');
+        var t = e.changedTouches[0];
+        joystickUpdate(t.clientX, t.clientY);
+      }, {passive: false});
+
+      joystickEl.addEventListener('touchmove', function (e) {
+        if (!joystickActive) return;
+        e.preventDefault();
+        var t = e.changedTouches[0];
+        joystickUpdate(t.clientX, t.clientY);
+      }, {passive: false});
+
+      joystickEl.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        joystickActive = false;
+        joystickReset();
+      }, {passive: false});
+
+      joystickEl.addEventListener('touchcancel', function () {
+        joystickActive = false;
+        joystickReset();
+      });
+    }
+  }
+
+  /* ============================================================
+     LAYOUT МОБИЛЬНОЙ ВЕРСИИ
+     ============================================================ */
+  function isMobileTouch() {
+    return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  }
+
+  function rectBottom(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return 0;
+    var r = el.getBoundingClientRect();
+    return (r.height === 0) ? 0 : r.bottom;
+  }
+  function rectTop(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return 0;
+    var r = el.getBoundingClientRect();
+    return (r.height === 0) ? 0 : r.top;
+  }
+  function rectRight(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return 0;
+    var r = el.getBoundingClientRect();
+    return (r.width === 0) ? 0 : r.right;
+  }
+  function rectLeft(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return 0;
+    var r = el.getBoundingClientRect();
+    return (r.width === 0) ? 0 : r.left;
+  }
+
+  function layoutMobile() {
+    if (!isMobileTouch()) {
+      boardEl.style.position = '';
+      boardEl.style.width = '';
+      boardEl.style.height = '';
+      boardEl.style.left = '';
+      boardEl.style.top = '';
+      boardEl.style.transform = '';
+      boardEl.style.borderRadius = '';
+      boardEl.style.zIndex = '';
+      return;
+    }
+
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var isLandscape = vw > vh;
+
+    var TOP = Math.max(
+      rectBottom('.hud'),
+      rectBottom('.speedpanel'),
+      rectBottom('.modebar')
+    );
+    if (TOP <= 0) TOP = 96;
+    TOP += 6;
+
+    var LEFT, RIGHT, BOTTOM;
+
+    if (isLandscape) {
+      var ctrlRight = rectRight('.controls');
+      var joyLeft   = rectLeft('.joystick');
+      LEFT  = (ctrlRight > 0 ? ctrlRight : 60) + 8;
+      RIGHT = (joyLeft > 0 ? vw - joyLeft : 140) + 8;
+      BOTTOM = 6;
+    } else {
+      var ctrlTop = rectTop('.controls');
+      var joyTop  = rectTop('.joystick');
+      var minTop = Math.min(
+        ctrlTop > 0 ? ctrlTop : vh,
+        joyTop > 0 ? joyTop : vh
+      );
+      BOTTOM = vh - minTop + 6;
+      LEFT = 8;
+      RIGHT = 8;
+    }
+
+    var availW = Math.max(80, vw - LEFT - RIGHT);
+    var availH = Math.max(80, vh - TOP - BOTTOM);
+    var size = Math.min(availW, availH);
+
+    var cx = LEFT + availW / 2;
+    var cy = TOP + availH / 2;
+
+    boardEl.style.position = 'fixed';
+    boardEl.style.width = size + 'px';
+    boardEl.style.height = size + 'px';
+    boardEl.style.left = cx + 'px';
+    boardEl.style.top = cy + 'px';
+    boardEl.style.transform = 'translate(-50%, -50%)';
+    boardEl.style.borderRadius = '0';
+    boardEl.style.zIndex = '1';
+  }
+
+  window.addEventListener('resize', layoutMobile);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(layoutMobile, 150);
+    setTimeout(layoutMobile, 400);
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', layoutMobile);
+  }
+
+  /* ============================================================
+     Кнопки
+     ============================================================ */
+  ovBtn.addEventListener('click', function (e) {
+    e.stopPropagation(); ensureAudio();
+    if (state === 'paused') resumeGame();
+    else startGame();
+  });
+  overlay.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+
+  btnPause.addEventListener('click', togglePause);
+  btnBoost.addEventListener('click', function () { ensureAudio(); activateBoost(); });
+  btnRestart.addEventListener('click', startGame);
+
+  btnMute.addEventListener('click', function () {
+    muted = !muted;
+    store.set('snake_muted', muted ? '1' : '0');
+    updateMuteBtn();
+    if (!muted) ensureAudio();
+  });
+
+  function updateMuteBtn() {
+    btnMute.textContent = muted ? '🔇' : '🔊';
+    btnMute.classList.toggle('muted', muted);
+  }
+
+  window.addEventListener('blur', function () { if (state === 'playing') pauseGame(); });
+
+  /* ============================================================
+     PICKER ФОНОВ
+     ============================================================ */
+  function buildPicker() {
+    pickerGrid.innerHTML = '';
+
+    var rnd = document.createElement('button');
+    rnd.className = 'pick-cell' + (bgMode === 'random' ? ' active' : '');
+    var rndPrev = document.createElement('div');
+    rndPrev.className = 'pick-preview pick-dice';
+    rndPrev.textContent = '🎲';
+    var rndName = document.createElement('span');
+    rndName.className = 'pick-name';
+    rndName.textContent = 'Случайно';
+    rnd.appendChild(rndPrev);
+    rnd.appendChild(rndName);
+    rnd.addEventListener('click', function () {
+      bgMode = 'random';
+      store.set('snake_bgmode', 'random');
+      applyBackgroundByIndex(pickRandomBgIndex());
+      buildPicker();
+    });
+    pickerGrid.appendChild(rnd);
+
+    BACKGROUNDS.forEach(function (bg, i) {
+      var cell = document.createElement('button');
+      var isActive = (bgMode === 'fixed' && bgFixedIndex === i);
+      cell.className = 'pick-cell' + (isActive ? ' active' : '');
+
+      var prev = document.createElement('div');
+      prev.className = 'pick-preview';
+      var miniCanvas = makeBackground(bg, 60, 2);
+      miniCanvas.style.width = '100%';
+      miniCanvas.style.height = '100%';
+      miniCanvas.style.display = 'block';
+      prev.appendChild(miniCanvas);
+
+      var label = document.createElement('span');
+      label.className = 'pick-name';
+      label.textContent = bg.name;
+
+      cell.appendChild(prev);
+      cell.appendChild(label);
+
+      cell.addEventListener('click', function () {
+        bgMode = 'fixed';
+        bgFixedIndex = i;
+        store.set('snake_bgmode', 'fixed');
+        store.set('snake_bgidx', String(i));
+        applyBackgroundByIndex(i);
+        buildPicker();
+      });
+      pickerGrid.appendChild(cell);
+    });
+  }
+
+  function openPicker() {
+    buildPicker();
+    picker.classList.add('open');
+    if (state === 'playing') pauseGame();
+  }
+  function closePicker() { picker.classList.remove('open'); }
+
+  btnBg.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (picker.classList.contains('open')) closePicker();
+    else openPicker();
+  });
+  pickerClose.addEventListener('click', closePicker);
+  picker.addEventListener('click', function (e) {
+    if (e.target === picker) closePicker();
+  });
+
+  /* ============================================================
+     HELP
+     ============================================================ */
+  function openHelp() {
+    helpModal.classList.add('open');
+    if (state === 'playing') pauseGame();
+    var body = helpModal.querySelector('.help-body');
+    if (body) body.scrollTop = 0;
+  }
+  function closeHelp() { helpModal.classList.remove('open'); }
+
+  btnHelp.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (helpModal.classList.contains('open')) closeHelp();
+    else openHelp();
+  });
+  helpClose.addEventListener('click', closeHelp);
+  helpModal.addEventListener('click', function (e) {
+    if (e.target === helpModal) closeHelp();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closePicker();
+      closeHelp();
+    }
+  });
+
+  /* ============================================================
+     Старт
+     ============================================================ */
+  initSpeedUI();
+  reset();
+  updateMuteBtn();
+  setState('start');
+  layoutMobile();
+  setTimeout(layoutMobile, 60);
+  setTimeout(layoutMobile, 300);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
